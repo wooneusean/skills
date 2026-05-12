@@ -17,9 +17,29 @@ skills/
 
 A skill is a markdown file containing a structured prompt or instruction set that can be invoked in an AI session to perform a well-defined task. Skills are designed to be reusable, composable, and easy to share.
 
+## Installation
+
+Clone the repo and run the install script to package all skills and install them to `~/.claude/skills/`:
+
+```bash
+git clone git@github.com:wooneusean/skills.git
+cd skills
+chmod +x install.sh
+./install.sh
+```
+
+To update after pulling new changes:
+
+```bash
+git pull
+./install.sh
+```
+
+Skills are stored as plain markdown in this repo and packaged into the `.skill` format that Claude Code expects during installation.
+
 ## Using skills
 
-In Claude Code, skills can be invoked via slash commands if configured in your `.claude/settings.json`. See the [Claude Code docs](https://docs.anthropic.com/en/docs/claude-code) for setup instructions.
+Once installed, skills are available in Claude Code sessions. Trigger them by saying the phrases described in each skill's `description` frontmatter field.
 
 ## Adding a new skill
 
