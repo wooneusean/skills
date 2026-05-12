@@ -10,6 +10,7 @@ skills/
 ├── decision-making/  # Multi-perspective analysis and decision frameworks
 ├── dev-workflow/     # General software development workflow skills
 ├── data/             # Data science and analysis skills
+├── learning/         # Teaching, tutoring, and knowledge-building skills
 └── templates/        # Authoring templates for new skills
 ```
 
@@ -56,4 +57,5 @@ Once installed, skills are available in Claude Code sessions. Trigger them by sa
 | `decision-making/` | Multi-perspective analysis and decision frameworks |
 | `dev-workflow/` | Code review, debugging, refactoring, and general dev tasks |
 | `data/` | Data exploration, analysis, and visualization tasks |
+| `learning/` | Teaching, tutoring, and knowledge-building skills |
 | `templates/` | Boilerplate for authoring new skills |
