@@ -6,7 +6,6 @@ A curated library of AI skills — reusable prompt templates and instructions fo
 
 ```
 skills/
-├── claude-code/      # Skills specific to the Claude Code CLI
 ├── decision-making/  # Multi-perspective analysis and decision frameworks
 ├── dev-workflow/     # General software development workflow skills
 ├── data/             # Data science and analysis skills
@@ -53,7 +52,6 @@ Once installed, skills are available in Claude Code sessions. Trigger them by sa
 
 | Directory | Purpose |
 |---|---|
-| `claude-code/` | Skills that extend or automate Claude Code workflows |
 | `decision-making/` | Multi-perspective analysis and decision frameworks |
 | `dev-workflow/` | Code review, debugging, refactoring, and general dev tasks |
 | `data/` | Data exploration, analysis, and visualization tasks |
