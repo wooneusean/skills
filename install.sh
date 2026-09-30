@@ -23,13 +23,27 @@ find "$REPO_DIR" -name "SKILL.md" \
   echo "  installed: $skill_name (bundle)"
 done
 
+# True when the file sits inside a bundle directory (an ancestor holds SKILL.md).
+in_bundle() {
+  local dir
+  dir="$(dirname "$1")"
+  while [ "$dir" != "$REPO_DIR" ] && [ "$dir" != "/" ]; do
+    [ -f "$dir/SKILL.md" ] && return 0
+    dir="$(dirname "$dir")"
+  done
+  return 1
+}
+
 # Flat skills: <category>/<skill-name>.md
+# Markdown inside a bundle (references, templates) belongs to that bundle.
 find "$REPO_DIR" -name "*.md" \
   ! -path "*/templates/*" \
   ! -path "*/.git/*" \
   ! -name "SKILL.md" \
   ! -name "README.md" \
   ! -name "CLAUDE.md" | while read -r md_file; do
+
+  in_bundle "$md_file" && continue
 
   skill_name="$(basename "$md_file" .md)"
   dest_dir="$SKILLS_DIR/$skill_name"
