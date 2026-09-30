@@ -7,6 +7,7 @@ A curated library of AI skills — reusable prompt templates and instructions fo
 | Skill | Category | What it does |
 |---|---|---|
 | [`definitive-docs`](dev-workflow/definitive-docs/SKILL.md) | dev-workflow | Writes and repairs docs, comments, and CLAUDE.md files so they state what is true rather than narrating edits. Ships a scanner that finds candidate hedging and change narration. |
+| [`docs-knowledge-base`](dev-workflow/docs-knowledge-base/SKILL.md) | dev-workflow | Finds, writes, and restructures docs in a nested markdown knowledge base (area folders, numbered docs, required frontmatter). Ships `build-index.py`, which generates every `INDEX.md` table from frontmatter and checks links, plus starter templates. |
 | [`git-commit`](dev-workflow/git-commit.md) | dev-workflow | Generates a Conventional Commits message from staged changes and creates the commit. |
 | [`handoff-doc`](dev-workflow/handoff-doc.md) | dev-workflow | Writes a `handoff.md` capturing session state so the next session resumes without repeating dead ends. |
 | [`phased-implementation`](dev-workflow/phased-implementation.md) | dev-workflow | Breaks a large change into phases that each end with the repository working, tracking deferred work in a plan file. |
