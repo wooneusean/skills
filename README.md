@@ -11,6 +11,7 @@ A curated library of AI skills — reusable prompt templates and instructions fo
 | [`git-commit`](dev-workflow/git-commit.md) | dev-workflow | Generates a Conventional Commits message from staged changes and creates the commit. |
 | [`handoff-doc`](dev-workflow/handoff-doc.md) | dev-workflow | Writes a `handoff.md` capturing session state so the next session resumes without repeating dead ends. |
 | [`phased-implementation`](dev-workflow/phased-implementation.md) | dev-workflow | Breaks a large change into phases that each end with the repository working, tracking deferred work in a plan file. |
+| [`test-audit`](dev-workflow/test-audit/SKILL.md) | dev-workflow | Gates every new or changed test on the behaviour it protects, and audits existing tests for low-value, implementation-coupled or duplicate coverage and the test-only production seams they keep alive. `CAMPAIGN.md` covers pruning a whole subsystem's tests. |
 | [`llm-council`](decision-making/llm-council.md) | decision-making | Runs a high-stakes decision past five AI advisors who analyze it from different angles, peer-review each other, and synthesize a verdict. |
 | [`socratic-teacher`](learning/socratic-teacher.md) | learning | Teaches a topic through one guiding question per turn, never giving the full solution. |
 
