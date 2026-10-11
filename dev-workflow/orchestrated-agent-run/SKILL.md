@@ -47,6 +47,7 @@ for external CLIs. Record the answers in the tracker.
   - an empty Report section.
 - **Tracker:** the orchestrator's state, kept outside the repo. It holds:
   - the role assignments and runner paths;
+  - each job's model and reasoning effort;
   - each item's progress with its commit SHAs;
   - each finding and the item it was folded into;
   - notes for the user and lessons.
@@ -61,6 +62,19 @@ for external CLIs. Record the answers in the tracker.
 - **Budget:** a time limit per job and for the whole run. Don't start an
   item that the remaining budget can't finish and verify; one finished item
   is worth more than several half-done ones.
+- **Effort:** where a model offers reasoning levels, the orchestrator picks
+  one per job to fit the job:
+  - the highest for planners and complex items (races, cache coordination,
+    changes across several surfaces);
+  - high for ordinary items and fix jobs;
+  - medium for docs-only jobs and small targeted fixes.
+
+  Running every job at the highest level costs hours over a run and buys
+  little on simple jobs.
+- **Prompts:** every prompt states the scope and the quality bar, never
+  urgency. An agent told to be quick cuts its verification. A run gets
+  faster from fitting effort and a single review layer, not from rushing
+  the agents.
 
 ## Step 2: The pipeline
 
@@ -84,6 +98,14 @@ for external CLIs. Record the answers in the tracker.
    - the amendments;
    - the item plan;
    - fold-ins.
+
+   Before reporting, the implementer runs one internal review: a single
+   fresh-context agent that exercises the running app. That live check
+   catches the focus, layout and runtime-only defects that diff reviews
+   miss. It is the job's only internal review: no internal diff reviewer,
+   no re-review rounds, and no reviewer that spawns agents of its own.
+   Nested reviews multiply job time and mostly repeat what the external
+   reviewers find.
 4. **Gate and commit:** read the implementer's report and the diff.
    - Check scope, and look for edits to forbidden files (the brief,
      lockfiles, migrations).
@@ -98,22 +120,37 @@ for external CLIs. Record the answers in the tracker.
    diff to a patch, keep the fold-in hunks, and stage it with
    `git apply --cached`. If they can't be separated, commit them together
    and say so in the message. Build or type-check each split commit on its
-   own.
+   own, and run its affected tests. When a split commit fails its own
+   tests, commit the parts together and name the fix in the body. Write
+   each commit message from the diff, not from the plan.
 5. **Review:** two independent reviewers run in parallel with the next
-   item's implementation.
+   item's implementation. Each works alone, in one pass, and spawns no
+   agents.
    - A **diff reviewer** works in a worktree pinned to the commit.
-   - A **live reviewer** exercises the running app at that commit. It uses
-     its own dev server from the pinned worktree, or the main one while no
-     implementer is running; the main one saves memory on a smaller
-     machine. Both servers use the shared dev backend and database, so the
-     reviewer stays read-only. Review an item that carries a migration only
-     after that migration is applied.
+   - A **live reviewer** exercises the app at that commit. Where the app
+     has a production mode, it serves a production build from the pinned
+     worktree on its own port, linking the main tree's installed
+     dependencies rather than reinstalling them. That build sees exactly
+     the commit, leaves the main dev server to the next implementer, and
+     usually takes a fraction of a dev server's memory. Without a
+     production mode, it uses a dev server from the pinned worktree, or the
+     main one while no implementer is running. Every server shares the dev
+     backend and database, so the reviewer follows the data rules below.
+     Review an item that carries a migration only after that migration is
+     applied.
 
    Every finding names a severity and a concrete failure scenario.
 6. **Fold in:** findings go into the next implementer prompt as a FOLD-IN
    section. For each finding the implementer reports one of: already fixed,
-   fixed, or rejected with a reason. Cap re-reviews of the same code at two
-   or three rounds.
+   fixed, or Disputed with evidence from the code. The orchestrator settles
+   every Disputed finding: it drops it, or carries it into the next job with
+   its answer. The plan's text alone never settles a finding. Cap
+   re-reviews of the same code at two or three rounds.
+
+   When a round returns more than about six findings, or touches the seams
+   the next item consumes, run them as a dedicated fix job before the next
+   item. Folding a dozen fixes into a feature item buries the feature and
+   mixes its commit.
 
    A P0 or P1 finding on an item that later items build on stops the line.
    A dependent item that is already implementing finishes and goes through
@@ -134,15 +171,27 @@ for external CLIs. Record the answers in the tracker.
 
 ## Safety rules for every agent
 
-- **Real data:** verification writes go only through a write-rejecting stub
-  or through clearly named fixtures that are removed afterwards. A
-  write-rejecting stub fails every non-GET request and never forwards it.
-  - Never enter values in settings or forms that save on change.
-  - Back up before any database write.
-  - Run DB-backed tests on a scratch database, behind a name guard.
-- **Read-only roles stay read-only.** A "quick check" POST is a write,
-  and so is a query-plan command that executes its statement (SQL
-  `EXPLAIN ANALYZE`).
+- **Real data:** ask the user whether the dev environment's data is
+  disposable, and record the answer in the brief.
+  - **Disposable:** implementers and live reviewers may write to it during
+    checks.
+  - **Not disposable:** verification writes go only through a
+    write-rejecting stub or through clearly named fixtures that are removed
+    afterwards. A write-rejecting stub fails every non-GET request and
+    never forwards it. It also can't show success states (a save, a toggle
+    that persists, an undo). An opt-in mode that applies writes in memory
+    to the stub's own synthetic fixtures, never forwarding any, makes them
+    visible. Have the stub count forwarded writes, and require zero.
+  - **Either way:**
+    - never enter values in settings or forms that save on change, since
+      they change how the app runs;
+    - back up before a migration or a bulk write;
+    - run DB-backed tests on a scratch database, behind a name guard;
+    - tell live reviewers exactly which keys and controls write. A key
+      that resets zoom in one view can set a rating in another.
+- **Read-only roles stay read-only.** Planners, pre-flight checkers and
+  diff reviewers never write. A "quick check" POST is a write, and so is a
+  query-plan command that executes its statement (SQL `EXPLAIN ANALYZE`).
 - **Live dev stack:**
   - Never run a build that cleans the output directory a running dev
     server is serving from.
@@ -153,6 +202,12 @@ for external CLIs. Record the answers in the tracker.
   behind and stops them. Leftovers like these outlive the job that started
   them and pile up across a long run. Size parallelism to the machine: how
   many agents run checks at once depends on the memory those checks take.
+- **Test runners:** most start one worker per core by default. Next to a
+  dev stack and a browser, that can freeze the machine and time tests out.
+  Every agent caps the worker count (two is a safe start) and runs tests at
+  lower priority (`nice`). Run the affected suites while working, and the
+  full suite once per job with the same cap. Never run two heavy jobs at
+  once, such as a full suite and a production build.
 - **Docs:** run code formatters only on code files. Over markdown they
   reflow tables and re-quote frontmatter. Never edit the brief.
 
@@ -181,7 +236,13 @@ for external CLIs. Record the answers in the tracker.
 |---|---|
 | Implementing several items at once on one stack | Run implementers serially. Parallelise planning and reviews. |
 | Re-reviewing until clean before the next item starts | Fold findings into the next item and cap the rounds. |
+| Nested reviews: internal diff reviewers, re-review rounds, reviewers spawning agents | One internal live check per job, and one pass per external reviewer. |
+| Every job at the highest reasoning effort | Pick the effort per job. |
+| Telling agents to hurry | State the scope and the quality bar. |
+| An implementer rejecting a finding by citing the plan | It lists the finding under Disputed, and the orchestrator settles it. |
 | Only a diff review | Add the live reviewer, which finds the user-visible bugs. |
+| A live review on a second dev server | Serve a production build from the pinned worktree. |
+| Default test-runner parallelism on a shared machine | Cap the workers and lower the priority. |
 | Committing a path that was already staged | Run `git reset` before staging by path. |
 | A split commit that imports a later commit's symbol | Build or type-check each commit in a worktree. |
 | Agents leave browsers, simulators or dev servers running after their checks | Make stopping them part of every agent's finish, and sweep for leftovers after each job. |

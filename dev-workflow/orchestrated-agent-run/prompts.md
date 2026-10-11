@@ -1,7 +1,8 @@
 # Prompt skeletons
 
 Assemble each job's prompt from these parts. Keep the shared preambles in
-files, and append the item-specific sections for each job.
+files, and append the item-specific sections for each job. Every prompt
+states the scope and the quality bar; none asks the agent to be quick.
 
 ## Planner (read-only)
 
@@ -72,13 +73,25 @@ files, and append the item-specific sections for each job.
 - **Live stack:** list the processes that reload on save and the builds
   that must not run under it. Use `timeout` on test runs, and never run
   commands that don't exit on their own (log followers, watch modes).
+- **Tests:** cap the runner's workers (state the flag and the number) and
+  run it under `nice`. Run the affected suites while working, and the full
+  suite once at the end with the same cap.
 - **Runtime checks** (browser, simulator, device, API calls):
-  - writes go only through a write-rejecting stub or named fixtures;
+  - writes follow the brief's data rules: disposable dev data, or only a
+    write-rejecting stub and named fixtures;
   - restore every environment override afterwards;
   - stop every browser, simulator, dev server or stub you started before
     your final report.
 - **Formatting:** check changed code files only. Never format markdown, and
   never edit the brief.
+- **Internal review:** before the final report, run one review of the
+  change: a single fresh-context agent that exercises the running app.
+  Fix what it finds, or list the finding under Disputed. Run no other
+  internal review and no second round, and give the reviewer no agents of
+  its own.
+- **Disagreements:** when an amendment, a fold-in finding or an internal
+  finding looks wrong, list it under Disputed with evidence from the code.
+  The plan's text alone is not a reason to reject a finding.
 - **Finishing:**
   - tests that fail without the change;
   - the affected packages' tests, type check and lint;
@@ -88,6 +101,7 @@ files, and append the item-specific sections for each job.
 - **Final message sections:**
   - Changes, one line per file, with each fold-in in its own section;
   - Deviations;
+  - Disputed, or "None";
   - Verification, with the exact commands and counts;
   - Docs;
   - Left for later.
@@ -102,7 +116,7 @@ partial diff as the job's own draft.
 
 - **Opening:** "Review exactly `git diff <parent>..HEAD` in this worktree,
   which is pinned to the commit. Read the files from this worktree, not
-  from the main tree."
+  from the main tree. Work alone, in one pass, and start no agents."
 - **Judge:**
   - completeness against the item and the plan;
   - correctness: races, leaks, broken contracts between packages;
@@ -123,14 +137,23 @@ partial diff as the job's own draft.
 
 ## Live reviewer (read-only, running app)
 
-- **Target:** a review server serving exactly the commit, from the pinned
-  worktree. Use the main server only when no implementer is running.
-- **Safety:** before exercising any write, make writes fail closed: point
-  the app at a write-rejecting stub, or intercept its requests. In a browser
-  that means an in-page interceptor that fulfils the needed writes with
+- **Target:** exactly the commit. Where the app has a production mode,
+  build it in the pinned worktree and serve it on its own port:
+  - link the main tree's installed dependencies and copy its environment
+    file in, rather than reinstalling;
+  - build only while no full test suite or other build is running;
+  - afterwards, stop the server and remove the links and the copied file.
+
+  Without a production mode, use a dev server from the pinned worktree, or
+  the main one while no implementer is running.
+- **Alone:** work in one pass, and start no agents.
+- **Safety:** follow the brief's data rules. When the data is not
+  disposable, make writes fail closed before exercising any: point the app
+  at a write-rejecting stub, or intercept its requests. In a browser that
+  means an in-page interceptor that fulfils the needed writes with
   synthetic responses, with a network-level abort behind it as a tripwire.
-  Never confirm an action against real data. Stop every browser, simulator
-  or server you started before reporting.
+  Never confirm an action against data the brief doesn't mark disposable.
+  Stop every browser, simulator or server you started before reporting.
 - **Exercise:**
   - the changed flows, in the configurations the brief names (for a web
     UI: viewport widths and themes);
@@ -147,7 +170,7 @@ FOLD-IN: review findings on item <N> (<sha>) to resolve in this job.
 Report them in their own "Item <N> fixes" section and keep them in item
 <N>'s files, so the orchestrator can commit them separately. Check the code
 at HEAD first. For each finding, say whether it was already resolved, you
-fixed it, or you reject it and why.
+fixed it, or you list it under Disputed with evidence from the code.
 
 1. [P2, <reviewer>] <title>. `<path:line>`: <problem>. Scenario: <steps>.
    Fix: <fix>; regression test: <case>.

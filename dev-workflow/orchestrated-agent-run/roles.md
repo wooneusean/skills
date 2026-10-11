@@ -7,9 +7,9 @@
 | Orchestrator | Writes the brief and tracker. Dispatches jobs, gates and commits, folds findings forward. Writes no product code. | Full, in the user's session | This session |
 | Planner | Writes one item's plan: facts with `path:line`, changes, tests, verification, risks, questions for the user. | Read-only | Ahead of implementation, several at once |
 | Pre-flight checker | Verifies the plan against the current code and live data, measures what the plan guessed, and writes binding amendments. | Read-only: code, GET requests, SELECT queries | After its plan, before its implementation |
-| Implementer | Builds one item: code, tests, docs, browser or runtime checks. Leaves its changes uncommitted. | Full, unattended | One at a time, on the main tree |
+| Implementer | Builds one item: code, tests, docs, browser or runtime checks, and one internal live check by a fresh-context agent. Leaves its changes uncommitted. | Full, unattended | One at a time, on the main tree |
 | Diff reviewer | Reviews the commit's diff for correctness, contracts, tests, docs and scope. | Read-only, in a worktree pinned to the commit | In parallel with the next implementation |
-| Live reviewer | Exercises the running app at the commit and compares it with the design and the requirements. | Read-only; writes only through a stub or in-page interception | In parallel with the diff reviewer |
+| Live reviewer | Exercises the app at the commit and compares it with the design and the requirements. | Writes only as the brief's data rules allow | In parallel with the diff reviewer, on a production build of the commit where the app has one |
 
 **Independence:** use different models for the implementer and the diff
 reviewer. When only one model is available, run each reviewer as a
@@ -17,11 +17,15 @@ fresh-context instance that sees the brief, the plan and the diff, but not
 the implementer's reasoning.
 
 **Capability:**
-- **Implementer:** the strongest coding model, at high reasoning effort.
+- **Implementer:** the strongest coding model.
 - **Pre-flight checker and live reviewer:** a model that is good at tool
   use, since they query live data and drive the running app.
 - **Planner and diff reviewer:** these tolerate a cheaper model better
   than the implementer does.
+
+**Effort:** the orchestrator picks each job's reasoning effort, by the rule
+under Effort in `SKILL.md`. The table's effort column is only the starting
+level for each role.
 
 ## Asking the user
 
@@ -34,8 +38,11 @@ tool if it has one.
    external one."
 2. **The assignment.** Propose a mapping from the configurations below and
    show it as a table: role, model, how it runs (subagent or CLI) and
-   effort. Then ask the user to confirm it or change any row. Also ask:
+   starting effort. Then ask the user to confirm it or change any row. Also
+   ask:
    - the time or usage limit per job and for the whole run;
+   - whether the dev environment's data is disposable, so checks may write
+     to it;
    - whether they can be reached during the run, and how;
    - whether external CLIs may run unsandboxed when their sandbox blocks
      what the checks need (a browser, a simulator, git).
