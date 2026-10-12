@@ -81,7 +81,10 @@ states the scope and the quality bar; none asks the agent to be quick.
     write-rejecting stub and named fixtures;
   - restore every environment override afterwards;
   - stop every browser, simulator, dev server or stub you started before
-    your final report.
+    your final report;
+  - start long-lived servers detached from your shell, and stop each by
+    its own PID (the one listening on its port): a parent process can be
+    the orchestrator's session, and killing it ends the run.
 - **Formatting:** check changed code files only. Never format markdown, and
   never edit the brief.
 - **Internal review:** before the final report, run one review of the
@@ -142,7 +145,8 @@ partial diff as the job's own draft.
   - link the main tree's installed dependencies and copy its environment
     file in, rather than reinstalling;
   - build only while no full test suite or other build is running;
-  - afterwards, stop the server and remove the links and the copied file.
+  - afterwards, stop the server by its own PID and remove the links and
+    the copied file.
 
   Without a production mode, use a dev server from the pinned worktree, or
   the main one while no implementer is running.
