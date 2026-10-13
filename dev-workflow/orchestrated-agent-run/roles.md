@@ -4,24 +4,26 @@
 
 | Role | Does | Access | Runs |
 |---|---|---|---|
-| Orchestrator | Writes the brief and tracker. Dispatches jobs, gates and commits, folds findings forward. Writes no product code. | Full, in the user's session | This session |
+| Orchestrator | Writes the brief and tracker. Groups the queue into jobs, dispatches them, checks each job, sends findings to the running builder and folds the rest forward. Writes no product code. | Full, in the user's session | This session |
 | Planner | Writes one item's plan: facts with `path:line`, changes, tests, verification, risks, questions for the user. | Read-only | Ahead of implementation, several at once |
-| Pre-flight checker | Verifies the plan against the current code and live data, measures what the plan guessed, and writes binding amendments. | Read-only: code, GET requests, SELECT queries | After its plan, before its implementation |
-| Implementer | Builds one item: code, tests, docs, browser or runtime checks, and one internal live check by a fresh-context agent. Leaves its changes uncommitted. | Full, unattended | One at a time, on the main tree |
-| Diff reviewer | Reviews the commit's diff for correctness, contracts, tests, docs and scope. | Read-only, in a worktree pinned to the commit | In parallel with the next implementation |
-| Live reviewer | Exercises the app at the commit and compares it with the design and the requirements. | Writes only as the brief's data rules allow | In parallel with the diff reviewer, on a production build of the commit where the app has one |
+| Pre-flight checker | Verifies the plans of one job's items against the current code and live data, measures what the plans guessed, and writes binding amendments, one file per item. | Read-only: code, GET requests, SELECT queries | One per job, while the previous job builds |
+| Builder | Builds one job's items in order: code, tests, docs, browser or runtime checks. Commits each item itself, then runs one internal live review of the whole job by a fresh-context agent. | Full, unattended | One at a time, on the main tree |
+| Diff reviewer | Reviews one item commit's diff for correctness, contracts, tests, docs and scope. | Read-only, in a worktree pinned to the commit | As each item commit lands, while the builder works on its next item |
+| Live reviewer | Exercises every item's flows at the job's last commit and compares them with the design and the requirements. | Writes only as the brief's data rules allow | Once per job, while the next job builds, on a production build of that commit where the app has one |
 
-**Independence:** use different models for the implementer and the diff
+**Independence:** use different models for the builder and the diff
 reviewer. When only one model is available, run each reviewer as a
 fresh-context instance that sees the brief, the plan and the diff, but not
-the implementer's reasoning.
+the builder's reasoning.
 
 **Capability:**
-- **Implementer:** the strongest coding model.
+- **Builder:** the strongest coding model.
 - **Pre-flight checker and live reviewer:** a model that is good at tool
-  use, since they query live data and drive the running app.
+  use, since they query live data and drive the running app. For a job
+  that touches must-be-correct code, use the strongest model available for
+  its live review.
 - **Planner and diff reviewer:** these tolerate a cheaper model better
-  than the implementer does.
+  than the builder does.
 
 **Effort:** the orchestrator picks each job's reasoning effort, by the rule
 under Effort in `SKILL.md`. The table's effort column is only the starting
@@ -56,7 +58,7 @@ unavailable during the run.
 
 ## Configurations
 
-| Available | Orchestrator | Planner | Pre-flight | Implementer | Diff reviewer | Live reviewer |
+| Available | Orchestrator | Planner | Pre-flight | Builder | Diff reviewer | Live reviewer |
 |---|---|---|---|---|---|---|
 | One model | session | subagent | subagent | subagent | subagent (fresh context) | subagent |
 | Two providers, A in session | A | B | A subagent | B | A subagent, or B in a fresh context | A subagent |
@@ -65,6 +67,14 @@ unavailable during the run.
 Keep the pre-flight checker and the live reviewer on the session's own
 subagents whenever possible. They need the same live-environment access
 that the orchestrator has.
+
+A builder that runs as a subagent of the session is the easiest to steer:
+the orchestrator can send it diff-review findings mid-job with the
+harness's message tool. A builder on an external CLI can't receive
+messages; its diff-review findings go to the next job as fold-ins instead.
+When an external provider's usage runs low mid-run, move the builders to
+the session's subagents with the same prompts, and keep the external
+model on diff reviews.
 
 ## Running external CLI jobs
 
@@ -99,4 +109,6 @@ claude -p --model <model> "$(cat prompts/<job>.md)" </dev/null > out/<job>.md 2>
 ```
 
 Grant unattended edit permissions only in the mode the user approved in
-round 2.
+round 2. A builder's internal reviewer runs as a subagent through the
+harness's own mechanism; never pass a permission-bypass flag to a CLI
+launch, and name the launch exactly in the builder's prompt.
