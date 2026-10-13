@@ -176,6 +176,10 @@ No reply needed.
   message stands in for the builder's report while the job is still
   running. For a fix commit, give the findings it answers and ask only
   whether they are fixed and whether the fix adds a new problem.
+- **Scope line:** when a job builds an item in several commits, open the
+  context with the commit's group and the groups still to come. Without
+  it, the reviewer judges the whole item and reports the later groups as
+  missing.
 - **Judge:**
   - completeness against the item and the plan;
   - correctness: races, leaks, broken contracts between packages;
