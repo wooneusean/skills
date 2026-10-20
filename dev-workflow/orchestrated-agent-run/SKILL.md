@@ -168,7 +168,15 @@ for external CLIs. Record the answers in the tracker.
    (guards for unsaved work, deletes, data safety) gets the strongest
    reviewer model.
 8. **Fix policy:** each job gets one fix round.
-   - P0–P2 findings in app code are always fixed.
+   - P0–P2 findings in app code are fixed when real use can reach them.
+   - **Weigh likelihood before every fix round.** Before a finding goes to
+     a builder, the orchestrator finds out how often its trigger occurs:
+     it checks the real data for the input the failure needs (a scan of the
+     stored files or rows is usually minutes), or names the normal use
+     that produces it. A finding that no real input or normal use reaches,
+     and that loses no data, goes to the Report as a known limit, whatever
+     its severity label. A review round spent on an input that never
+     occurs costs as much as one spent on a real bug.
    - A second round happens only for a P0–P2 in the first round's own fix,
      checked with one diff review.
    - P3 findings and test-helper limits go to the tracker's minor list.
@@ -278,6 +286,7 @@ reviews take 20–50 minutes each and stay off the critical path.
 | One item per job, with the orchestrator committing | Batch related items into a job, and let the builder commit each item. |
 | A dedicated fix job after every review | Send diff-review findings to the running builder, and fold live-review findings into the next job. |
 | Re-reviewing fixes of fixes until clean | One fix round per job, a second only for a serious finding in that fix, and the rest to the Report. |
+| Sending every P1 or P2 back for a fix by its label alone | Check how often real data or normal use reaches its trigger first; record an unreachable one that loses no data as a known limit. |
 | Fixing every minor finding inside its job | Collect them for one minor-bug pass at the end, triaged by daily-use impact. |
 | Browser suites re-run after every change | Affected specs while working, every touched suite once at the end of the job. |
 | Building several jobs at once on one stack | Run builders serially. Parallelise pre-flights and reviews. |
