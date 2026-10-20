@@ -13,7 +13,8 @@ to it.
 
 Three ideas carry the whole system:
 
-1. **Nesting:** top `INDEX.md` → `<area>/INDEX.md` → `<area>/NNN Title.md`.
+1. **Nesting:** top `INDEX.md` → `<area>/INDEX.md` → `<area>/NNN Title.md`, with optional
+   sub-areas (`<area>/<sub>/INDEX.md` → `<area>/<sub>/NNN Title.md`) at any depth.
    Tokens spent are driven by the size of the doc actually read, not by
    folder depth.
 2. **Frontmatter:** every doc declares `description`, `tags`, `status`,
@@ -47,13 +48,24 @@ The full spec lives in the docs dir's own `CLAUDE.md` (a copy ships as
   <area>/INDEX.md          area frontmatter + reading order + GENERATED doc table
   <area>/NNN Title.md      docs, numbered per area from 001
   <area>/TMP Title.md      temporary handoffs: no number, no frontmatter
+  <area>/<sub>/...         optional sub-area: same shape, own INDEX.md and numbering
 ```
 
 - An **area** is one project or one infra domain, named in lowercase
   kebab-case (`calorie-tracker/`, `k3s/`). Create it with its first doc.
   Numbered docs never sit at the top level.
-- Only split an area into sub-areas when it gets unwieldy (roughly 10+
-  docs). The script only reads one level down, so extend it first.
+- **Sub-areas** nest a specific effort under a general area, e.g.
+  `shopping/` (shop access and browsing, reusable for any product) with
+  `shopping/clothes-hunting/` (one hunt's brief and leads). Use one for that
+  general/specific split, or once an area passes roughly 10 docs.
+  - The script recurses to any depth, giving the parent INDEX a generated
+    sub-area table. The top-level table lists only top areas, with their
+    counts including sub-areas.
+  - Refs: `[clothes-hunting/001]` from the parent, or
+    `[shopping/clothes-hunting/001]` from elsewhere, each with a relative
+    link definition.
+  - Moving docs into a new area renumbers them per folder. Update every ref
+    and run `--check`.
 
 ## Setting up a new docs dir
 

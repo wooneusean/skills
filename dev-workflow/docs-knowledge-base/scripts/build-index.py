@@ -7,6 +7,8 @@ Root: --root PATH, else $DOCS_ROOT, else the parent of this script's dir
 Layout:
   docs/INDEX.md               top-level: hand-written preamble + generated area table
   docs/<area>/INDEX.md        per area: hand-written frontmatter + generated doc table
+                              (plus a sub-area table when the area has sub-areas)
+  docs/<area>/<sub>/INDEX.md  optional sub-areas, same shape, any depth
   docs/<area>/NNN Title.md    each doc starts with YAML-ish frontmatter:
       ---
       description: "one or two sentences: what's in it, when to read it"
@@ -101,7 +103,7 @@ def check_links(path: Path) -> None:
     prose = re.sub(r"```.*?```", "", text, flags=re.S)
     prose = re.sub(r"`[^`\n]*`", "", prose)  # inline code (examples) isn't a real ref
     defs = dict(re.findall(r"^\[([^\]]+)\]: (\S+)$", text, flags=re.M))
-    for ref in set(re.findall(r"\[((?:[a-z0-9-]+/)?\d{3})\](?![:(])", prose)):
+    for ref in set(re.findall(r"\[((?:[a-z0-9-]+/)*\d{3})\](?![:(])", prose)):
         if ref not in defs:
             problems.append(f"{rel}: [{ref}] used but not defined")
     targets = list(defs.values()) + re.findall(r"\]\((\.{1,2}/[^)\s]+)\)", prose)
@@ -129,41 +131,63 @@ def check_tooling(area: str, tooling: str | None) -> None:
             problems.append(f"{where}: tooling dir {tooling} has no {need}")
 
 
+def is_area(d: Path) -> bool:
+    """A folder with numbered docs, or with sub-areas that have them."""
+    if not d.is_dir() or d.name.startswith((".", "_")) or d.name == "scripts":
+        return False
+    return any(DOC_RE.match(p.name) for p in d.iterdir()) or any(is_area(c) for c in d.iterdir())
+
+
 def build_area(area: Path, check: bool) -> dict | None:
+    name = str(area.relative_to(DOCS))
     index = area / "INDEX.md"
     if not index.exists():
-        problems.append(f"{area.name}/: has docs but no INDEX.md")
+        problems.append(f"{name}/: has docs but no INDEX.md")
         return None
     meta = frontmatter(index) or {}
     for k in ("description", "tags"):
         if not meta.get(k):
-            problems.append(f"{area.name}/INDEX.md: frontmatter missing '{k}'")
+            problems.append(f"{name}/INDEX.md: frontmatter missing '{k}'")
     mode = meta.get("improvement", "off")
     if mode not in IMPROVEMENT_MODES:
-        problems.append(f"{area.name}/INDEX.md: improvement '{mode}' not one of {IMPROVEMENT_MODES}")
+        problems.append(f"{name}/INDEX.md: improvement '{mode}' not one of {IMPROVEMENT_MODES}")
     if mode == "continuous":
-        check_tooling(area.name, meta.get("tooling"))
+        check_tooling(name, meta.get("tooling"))
     for doc in (p for p in area.iterdir() if DOC_RE.match(p.name)):
         if "improvement" in (frontmatter(doc) or {}):
-            problems.append(f"{area.name}/{doc.name}: 'improvement' belongs in the area INDEX.md, not a doc")
+            problems.append(f"{name}/{doc.name}: 'improvement' belongs in the area INDEX.md, not a doc")
     rows = ["| Doc | Description | Tags | Status |", "| --- | --- | --- | --- |"]
-    latest = ""
+    latest, count = "", 0
     for doc in sorted(p for p in area.iterdir() if DOC_RE.match(p.name)):
         fm = frontmatter(doc)
         if fm is None:
-            problems.append(f"{area.name}/{doc.name}: no frontmatter")
+            problems.append(f"{name}/{doc.name}: no frontmatter")
             continue
         for k in REQUIRED:
             if not fm.get(k):
-                problems.append(f"{area.name}/{doc.name}: frontmatter missing '{k}'")
+                problems.append(f"{name}/{doc.name}: frontmatter missing '{k}'")
         latest = max(latest, fm.get("updated", ""))
+        count += 1
         link = f"[{doc.stem}](./{quote(doc.name)})"
         tags = ", ".join(fm.get("tags", []))
         rows.append(f"| {link} | {cell(fm.get('description', '—'))} | {cell(tags)} | {fm.get('status', '?')} |")
         check_links(doc)
+    if count == 0:
+        rows = []
+    subs = [i for i in (build_area(d, check) for d in sorted(area.iterdir()) if is_area(d)) if i]
+    if subs:
+        if rows:
+            rows.append("")
+        rows += ["| Sub-area | What's in it | Tags | Docs |", "| --- | --- | --- | --- |"]
+        for sub in subs:
+            short = sub["name"].split("/")[-1]
+            rows.append(f"| [{short}/](./{quote(short)}/INDEX.md) | {cell(sub.get('description', '—'))} "
+                        f"| {cell(', '.join(sub.get('tags', [])))} | {sub['count']} (updated {sub['updated'] or '?'}) |")
+            count += sub["count"]
+            latest = max(latest, sub["updated"])
     replace_generated(index, "\n".join(rows), check)
     check_links(index)
-    return {**meta, "name": area.name, "count": len(rows) - 2, "updated": latest}
+    return {**meta, "name": name, "count": count, "updated": latest}
 
 
 def main() -> int:
@@ -172,11 +196,10 @@ def main() -> int:
         print(f"PROBLEM: docs root {DOCS} is not a directory")
         return 1
     areas = []
-    for area in sorted(p for p in DOCS.iterdir() if p.is_dir() and not p.name.startswith((".", "_")) and p.name != "scripts"):
-        if any(DOC_RE.match(p.name) for p in area.iterdir()):
-            info = build_area(area, check)
-            if info:
-                areas.append(info)
+    for area in sorted(p for p in DOCS.iterdir() if is_area(p)):
+        info = build_area(area, check)
+        if info:
+            areas.append(info)
     for stray in (p for p in DOCS.iterdir() if p.is_file() and DOC_RE.match(p.name)):
         problems.append(f"{stray.name}: numbered doc at top level; move it into an area folder")
 

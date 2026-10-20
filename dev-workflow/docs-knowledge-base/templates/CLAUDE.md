@@ -16,17 +16,28 @@ INDEX.md                  top level: how to look things up + generated area tabl
 ABOUT.md                  who the owner is (personal context)
 CLAUDE.md                 this file
 scripts/build-index.py    regenerates every INDEX.md table from frontmatter
-<area>/INDEX.md           area frontmatter + generated table of its docs
+<area>/INDEX.md           area frontmatter + generated table of its docs (and sub-areas)
 <area>/NNN Title.md       the docs
+<area>/<sub>/INDEX.md     optional sub-area, same shape (e.g. shopping/clothes-hunting/)
+<area>/<sub>/NNN Title.md its docs, numbered per sub-area
 ```
 
 - An **area** is one project or one infra domain (e.g. `calorie-tracker/`,
   `k3s/`). Folder names are lowercase and kebab-case.
 - Create an area when its first doc is written. Every numbered doc lives in
   an area; none sit at the top level.
-- Split an area into sub-areas only when it gets unwieldy (roughly 10+
-  docs). The script only reads one level down, so it would need extending
-  first.
+- **Sub-areas** nest a specific effort under a general area: the general
+  area holds the reusable tooling and rules, and the sub-area holds what's
+  specific to one effort. For example, `shopping/` holds shop access and
+  browsing, and `shopping/clothes-hunting/` holds the garment briefs.
+  - Use a sub-area for that split, or once an area gets unwieldy (roughly 10+
+    docs).
+  - `build-index.py` handles any depth. A parent's INDEX gets a generated
+    sub-area table. The top-level table lists only top areas, and their doc
+    counts include sub-areas.
+  - Cross-reference a sub-area doc as `[clothes-hunting/001]` from its parent,
+    or `[shopping/clothes-hunting/001]` from elsewhere, with a relative link
+    definition.
 
 ## Frontmatter (required)
 
