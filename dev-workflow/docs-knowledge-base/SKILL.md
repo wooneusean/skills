@@ -198,7 +198,9 @@ leftover import stub). List the folder yourself.
    "I'll fold it in later". The file is the single state.
 10. Run the script, then `--check`. Fix every problem, and list any new
     area folder for strays.
-11. **Commit:** `git add -A && git commit -m "<area>: <what changed>"`.
+11. **Commit:** `git add -A && git commit -m "<area>: <what changed>"`. If the
+    repo has a remote, `git push` as a separate command (`git pull --rebase`
+    first if rejected). Never commit secret values, even to a private remote.
 12. **Chase references outside the docs** after any move or rename: skills,
     memory, cron job prompts, and code comments that mention the docs path.
     Update them all in the same pass.
