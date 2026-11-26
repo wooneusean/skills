@@ -15,7 +15,8 @@ A curated library of AI skills — reusable prompt templates and instructions fo
 | [`phased-implementation`](dev-workflow/phased-implementation.md) | dev-workflow | Breaks a large change into phases that each end with the repository working, tracking deferred work in a plan file. |
 | [`test-audit`](dev-workflow/test-audit/SKILL.md) | dev-workflow | Gates every new or changed test on the behaviour it protects, and audits existing tests for low-value, implementation-coupled or duplicate coverage and the test-only production seams they keep alive. `CAMPAIGN.md` covers pruning a whole subsystem's tests. |
 | [`llm-council`](decision-making/llm-council.md) | decision-making | Runs a high-stakes decision past five AI advisors who analyze it from different angles, peer-review each other, and synthesize a verdict. |
-| [`socratic-teacher`](learning/socratic-teacher.md) | learning | Teaches a topic through one guiding question per turn, never giving the full solution. |
+| [`socratic-tutor`](learning/socratic-tutor.md) | learning | Tutors a topic to mastery through questions: a diagnostic places the starting level, a skill map tracks each subskill from 0 to 5, and spaced review and a final assessment confirm it. Only when asked to be taught, quizzed or drilled. |
+| [`walk-me-through`](learning/walk-me-through.md) | learning | Guides a hands-on task while the user makes every edit and runs every command. Steps go in dependency order, so nothing is used before a step creates it, and each gives the location, pasteable content, what it does and what to expect. |
 
 ## What is a skill?
 
