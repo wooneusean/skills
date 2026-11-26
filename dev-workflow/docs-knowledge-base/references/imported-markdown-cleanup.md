@@ -37,10 +37,10 @@ Afterwards:
 
 - grep for leftover `--` outside frontmatter. Numbered-list lines were
   skipped by step 1, so fix them separately.
-- Print every changed body and read it once before committing. Lead-ins
+- Print every changed body and read it once before finishing. Lead-ins
   like `Home: - a - b` inside an example become `Home:` plus a list, which
   is correct, but check for any list that was split in the wrong place.
-- Run `build-index.py --check`, then commit.
+- Run `build-index.py --check`, then commit if the knowledge base uses git.
 
 For the one-match `rep` helper and write-at-the-end pattern, see
 "Scripted multi-doc edits" in SKILL.md (under "Writing or updating docs").

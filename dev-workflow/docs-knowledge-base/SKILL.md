@@ -76,8 +76,11 @@ mkdir -p "$DOCS/scripts"
 cp "$SKILL/scripts/build-index.py" "$DOCS/scripts/"
 cp "$SKILL/templates/CLAUDE.md" "$SKILL/templates/INDEX.md" "$DOCS/"
 touch "$DOCS/ABOUT.md"
-cd "$DOCS" && git init -b main && git add -A && git commit -m "docs: initial"
 ```
+
+Git is optional. A versioned knowledge base also runs
+`cd "$DOCS" && git init -b main && git add -A && git commit -m "docs: initial"`;
+a local-only one skips it and every commit step below.
 
 For each area: `mkdir "$DOCS/<area>"`, copy `templates/area-INDEX.md` to
 `<area>/INDEX.md`, and fill in its frontmatter. Then write
@@ -176,7 +179,8 @@ leftover import stub). List the folder yourself.
    decisions with their one-line reason, commands that work, measured
    numbers (and when they were verified), and gotchas that cost real time.
    Never record session history: milestone narratives, bugs fixed and
-   forgotten, processes killed, files moved. Git holds the history.
+   forgotten, processes killed, files moved. History belongs in git, or
+   nowhere in a local-only knowledge base.
 2. **Loose shape:** decision/outcome → setup (paths, config, exact commands)
    → gotchas.
 3. **Update in place and bump `updated`.** For a reversed decision, write a
@@ -198,9 +202,11 @@ leftover import stub). List the folder yourself.
    "I'll fold it in later". The file is the single state.
 10. Run the script, then `--check`. Fix every problem, and list any new
     area folder for strays.
-11. **Commit:** `git add -A && git commit -m "<area>: <what changed>"`. If the
-    repo has a remote, `git push` as a separate command (`git pull --rebase`
-    first if rejected). Never commit secret values, even to a private remote.
+11. **Commit, in a versioned knowledge base:** `git add -A && git commit -m
+    "<area>: <what changed>"`. If the repo has a remote, `git push` as a
+    separate command (`git pull --rebase` first if rejected). A local-only
+    knowledge base skips this step. Never write secret values into the docs,
+    committed or not.
 12. **Chase references outside the docs** after any move or rename: skills,
     memory, cron job prompts, and code comments that mention the docs path.
     Update them all in the same pass.
@@ -213,7 +219,8 @@ and import it at the top of each run.
 
 ## Restructuring (moving or renumbering many docs)
 
-- Start from a clean, committed tree so the whole move can be reverted.
+- Start from a clean, committed tree (or, without git, a copy of the docs
+  dir) so the whole move can be reverted.
 - Do it in one script:
   1. Build an old → (area, new number, title) map.
   2. Strip old headers and prepend frontmatter.
@@ -232,7 +239,7 @@ and import it at the top of each run.
   "decisions" doc. Rewrite superseded requirements in place, and move
   deferred ones to a "Later" section with their reason. Update
   `description`/`tags`, grep the area for stale terms, then delete the TMP
-  in the same commit.
+  in the same change.
 - **Partial answers:** fold the settled items in now. The TMP keeps only the
   delegated items, each with a **Suggestion** and **Questions** block.
 - **Report guesses:** anything you invented while folding is listed in the
