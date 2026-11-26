@@ -197,17 +197,18 @@ again:
 
 ## Maintenance
 
-This directory is a git repo on branch `main`. Commit after each change with
-a short message saying what changed. Run `build-index.py --check` first.
-Commits are the history, so docs stay facts, not a ledger.
+Run `build-index.py --check` after each change. When this directory is a git
+repo, commit after each change with a short message saying what changed.
+Commits are the history, so docs stay facts, not a ledger. A local-only
+knowledge base keeps no history: the docs still record facts only.
 
 - **If the repo has a remote, push after every commit:** `git push`. If it's
   rejected because the remote moved, run `git pull --rebase` and push again.
   Run the push as its own command, not chained after the commit with `&&`, so
   a push failure doesn't hide whether the commit landed.
-- **Never commit secret values** (passwords, API keys, tokens, webhook URLs),
-  even to a private remote. Record the path of the file that holds a secret,
-  never its contents.
+- **Never write secret values into the docs** (passwords, API keys, tokens,
+  webhook URLs), committed or not. Record the path of the file that holds a
+  secret, never its contents.
 
 - Small corrections: edit in place and bump `updated`.
 - A reversed decision: write a new doc, set the old one's `status:
